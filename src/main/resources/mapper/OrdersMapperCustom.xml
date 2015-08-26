@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.ssm.mapper.OrdersMapperCustom">
+        <!-- 订单查询关联用户的resultMap -->
+        <resultMap id="OrdersUserResultMap" type="Orders">
+            <!-- 配置要映射的订单信息 -->
+            <id column="id" property="id"></id>
+            <result column="user_id" property="userId"></result>
+            <result column="number" property="number"></result>
+            <result column="createtime" property="createTime"></result>
+            <result column="note" property="note"></result>
+            <!-- 配置要映射的关联的用户信息 -->
+            <!-- association: 用于映射关联查询单个对象的信息 -->
+            <!-- property: 要将关联查询的用户信息映射到orders中的哪个属性 -->
+            <association property="user" javaType="com.demo.ssm.po.User">
+                <!-- id: 关联查询用户的唯一标识 -->
+                <id column="user_id" property="id"></id>
+                <result column="username" property="username"></result>
+                <result column="sex" property="sex"></result>
+                <result column="address" property="address"></result>
+            </association>
+        </resultMap>
+        <!-- 使用继承，就不用再配置订单和用户信息的映射-->
+        <resultMap id="OrderDetailResultMap" type="Orders" extends="OrdersUserResultMap">
+            <collection property="orderDetailList" ofType="com.demo.ssm.po.OrderDetail">
+                <id property="id" column="orderdetail_id"></id>
+                <result property="itemsId" column="items_id"></result>
+                <result property="itemsNum" column="items_num"></result>
+            </collection>
+        </resultMap>
+        <resultMap id="UserAndDetailResultMap" type="com.demo.ssm.po.User">
+            <id column="user_id" property="id"></id>
+            <result column="username" property="username"></result>
+            <result column="sex" property="sex"></result>
+            <result column="address" property="address"></result>
+            <collection property="ordersList" ofType="com.demo.ssm.po.Orders">
+                <id column="id" property="id"></id>
+                <result column="user_id" property="userId"></result>
+                <result column="number" property="number"></result>
+                <result column="createtime" property="createTime"></result>
+                <result column="note" property="note"></result>
+                <collection property="orderDetailList" ofType="com.demo.ssm.po.OrderDetail">
+                    <id column="orderdetail_id" property="id"></id>
+                    <result column="items_id" property="itemsId"></result>
+                    <result column="items_num" property="itemsNum"></result>
+                    <association property="items" javaType="com.demo.ssm.po.Items">
+                        <id column="items_id" property="id"></id>
+                        <result column="name" property="name"></result>
+                        <result column="price" property="price"></result>
+                        <result column="detail" property="detail"></result>
+                    </association>
+                </collection>
+            </collection>
+
+        </resultMap>
+        <!-- 查询订单，关联查询用户 -->
+        <select id="findOrdersUser" resultType="com.demo.ssm.po.OrdersCustom">
+            SELECT orders.*,user.username,user.sex,user.address
+            FROM orders,user
+            WHERE orders.user_id = user.id
+        </select>
+
+        <select id="findOrdersUserResultMap" resultMap="OrdersUserResultMap">
+          SELECT orders.*,user.username,user.sex,user.address
+          FROM orders,user
+          WHERE orders.user_id = user.id
+        </select>
+
+        <!-- 查询订单关联查询用户及订单明细,使用resultMap -->
+        <select id="findOrderDetail" resultMap="OrderDetailResultMap">
+            SELECT o.*,u.sex,u.address,u.username,d.id orderdetail_id,d.items_id,d.items_num
+            FROM orders o,user u,orderdetail d
+            WHERE d.orders_id=o.id AND u.id = o.user_id
+        </select>
+        <select id="findUserAndOrders" resultMap="UserAndDetailResultMap">
+            SELECT o.*,u.sex,u.address,u.username,d.items_id,d.items_num,d.id orderdetail_id,i.name,i.price,i.detail
+            FROM orders o,user u,orderdetail d,items i
+            WHERE d.orders_id=o.id AND u.id = o.user_id AND d.items_id=i.id
+        </select>
+    <!-- 延迟加载的resultMap-->
+    <resultMap id="OrdersUserLazyLoadingResultMap" type="com.demo.ssm.po.Orders">
+        <id column="id" property="id"></id>
+        <result column="user_id" property="userId"></result>
+        <result column="number" property="number"></result>
+        <result column="createtime" property="createTime"></result>
+        <result column="note" property="note"></result>
+        <!-- column: 订单中和user关联的列
+             select: 指定使用userMapper.xml的findUserbyId来关联查询 -->
+        <association property="user" javaType="com.demo.ssm.po.User" select="com.demo.ssm.mapper.UserMapper.findUserById" column="user_id">
+        </association>
+    </resultMap>
+        <!-- 查询订单，关联查询用户，用户信息延迟加载 -->
+        <select id="findOrdersUserLazyLoading" resultMap="OrdersUserLazyLoadingResultMap">
+            SELECT * FROM orders
+        </select>
+
+
+
+
+</mapper>

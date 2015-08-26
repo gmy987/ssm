@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="tjuscstwwx:war">
+    <output-path>$USER_HOME$/Desktop/tjuscswx/code/tjuscstwwx/target</output-path>
+    <root id="archive" name="tjuscstwwx.war">
+      <element id="artifact" artifact-name="tjuscstwwx:war exploded" />
+    </root>
+  </artifact>
+</component>

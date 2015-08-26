@@ -1,0 +1,91 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop" xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!-- 组件扫描 -->
+    <context:component-scan base-package="com.demo.ssm"/>
+    <!--开启注解代理功能-->
+    <aop:aspectj-autoproxy/>
+    <!-- 静态资源解析,包括:js,css,img... -->
+    <mvc:resources mapping="/upload/**" location="/upload/"/>
+    <mvc:resources mapping="/js/**" location="/js/"/>
+
+    <!-- 使用mvc的注解驱动可以代替下面注解映射器和适配器的配置
+         默认还加载了很多参数的绑定方法，比如json转换的解释器就默认加载了 -->
+    <mvc:annotation-driven conversion-service="conversionService" validator="validator"></mvc:annotation-driven>
+    <!-- 注解映射器 -->
+    <!--<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"/>-->
+    <!-- 注解适配器 -->
+    <!--<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"/>-->
+
+    <!-- 解析jsp视图,默认使用jstl,所以注意需要jstl的包 -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/pages/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!-- 自定义参数绑定 -->
+    <bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="converters">
+                <!-- 日期类型的转换 -->
+                <bean class="com.demo.ssm.controller.converter.CustomDateConverter"/>
+        </property>
+    </bean>
+
+    <!-- 全局异常处理器
+         只要实现了HandlerExceptionResolver接口,就是全局异常处理器 -->
+    <bean class="com.demo.ssm.exception.CustomExceptionResolver"/>
+    <!-- 文件上传的解析器
+         要想使用表单提交enctype="multipart/form-data"格式的数据(如上传图片),需要配置此解析器,不配置的话参数绑定会失败 -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!-- 设置上传文件的最大尺寸为5MB -->
+        <property name="maxUploadSize">
+            <value>5242880</value>
+        </property>
+    </bean>
+
+    <!-- 校验器 -->
+    <bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+        <!-- 使用hibernate的校验器 -->
+        <property name="providerClass" value="org.hibernate.validator.HibernateValidator"/>
+        <!-- 指定校验使用的资源文件,若不指定则默认加载classpath下的ValidationMessage.properties -->
+        <property name="validationMessageSource" ref="messageSource"/>
+    </bean>
+    <!-- 校验错误信息配置文件 -->
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <!-- 资源名 -->
+        <property name="basenames">
+            <list>
+                <value>classpath:CustomValidationMessage</value>
+            </list>
+        </property>
+        <!-- 资源文件编码格式 -->
+        <property name="fileEncodings" value="UTF-8"/>
+        <property name="defaultEncoding" value="UTF-8"/>
+        <!-- 对资源文件内容缓存时间,单位秒 -->
+        <property name="cacheSeconds" value="120"/>
+    </bean>
+    <!--<bean id="tester" class="com.demo.ssm.aspect.AspectTest"/>-->
+
+    <!-- 拦截器 -->
+    <!--<mvc:interceptors>-->
+        <!--&lt;!&ndash;多个拦截器顺序执行&ndash;&gt;-->
+        <!--&lt;!&ndash;<mvc:interceptor>&ndash;&gt;-->
+            <!--&lt;!&ndash;<mvc:mapping path="/**"/>&ndash;&gt;-->
+            <!--&lt;!&ndash;<bean class="com.demo.ssm.interceptor.LoginInterceptor"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;</mvc:interceptor>&ndash;&gt;-->
+        <!--<mvc:interceptor>-->
+            <!--&lt;!&ndash;/**表示拦截所有url,包括子url路径,/*则不包括子url&ndash;&gt;-->
+            <!--<mvc:mapping path="/**"/>-->
+            <!--<bean class="com.demo.ssm.interceptor.HandlerInterceptor1"/>-->
+        <!--</mvc:interceptor>-->
+        <!--<mvc:interceptor>-->
+            <!--<mvc:mapping path="/**"/>-->
+            <!--<bean class="com.demo.ssm.interceptor.HandlerInterceptor2"/>-->
+        <!--</mvc:interceptor>-->
+    <!--</mvc:interceptors>-->
+</beans>
