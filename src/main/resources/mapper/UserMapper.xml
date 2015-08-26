@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace命名空间，作用是对sql进行分类化管理，即sql隔离
+注意：实用mapper代理方法开发，namespace有特殊重要作用,namespace等于mapper接口的地址
+-->
+<mapper namespace="com.demo.ssm.mapper.UserMapper">
+    <!--开启本Mapper在这个namespace下的二级缓存-->
+    <!--type指定cache接口的实现类,mybatis默认使用PerpetualCache
+        要和ehcache整合,需要配置type为ehcache的cache接口实现类 -->
+    <!--<cache type="org.mybatis.caches.ehcache.EhcacheCache">-->
+        <!--<property name="timeToIdleSeconds" value="3600"/>-->
+        <!--<property name="timeToLiveSeconds" value="3600"/>-->
+        <!--&lt;!&ndash; 同ehcache参数maxElementsInMemory &ndash;&gt;-->
+        <!--<property name="maxEntriesLocalHeap" value="1000"/>-->
+        <!--&lt;!&ndash; 同ehcache参数maxElementsOnDisk &ndash;&gt;-->
+        <!--<property name="maxEntriesLocalDisk" value="10000000"/>-->
+        <!--<property name="memoryStoreEvictionPolicy" value="LRU"/>-->
+    <!--</cache>-->
+    <!-- 定义sql片段
+         一般基于单表定义sql片段，这样此片段的可重用性高
+         注意：在sql片段中不要包含where -->
+    <sql id="queryUser">
+        <if test="user!=null">
+            <if test="user.sex!=null and user.sex!=''">
+                AND sex=#{user.sex}
+            </if>
+            <if test="user.username!=null">
+                AND username LIKE '%${user.username}%'
+            </if>
+            <if test="ids!=null">
+                <!-- collection:指定输入对象的集合
+                     item:每个遍历生成对象
+                     open:开始遍历时拼接串
+                     end:结束时拼接串
+                     or:两个对象之间需要拼接的串 -->
+                <foreach collection="ids" item="id" open="AND (" close=")" separator="OR">
+                    id=#{id}
+                </foreach>
+            </if>
+        </if>
+    </sql>
+    <!-- 定义resultMap
+         type:最终映射成的java对象
+         id: 该resultMap的唯一标识 -->
+    <resultMap type="User" id="userResultMap">
+        <!-- id表示查询结果集中的唯一标识
+             column: 查询出的列名
+             property: type指定的java对象的属性名 -->
+        <id column="id_" property="id"/>
+        <!-- result表示对普通名定义 -->
+        <result column="username_" property="username"/>
+    </resultMap>
+    <!--用户信息的综合查询
+        where标签可以自动去掉条件中的第一个and -->
+    <select id="findUserList" parameterType="UserQueryVo" resultType="com.demo.ssm.po.User">
+        SELECT * FROM USER
+        <where>
+            <!-- refid为sql片段的id，若引用的sql片段不在本mapper文件中，则要指定namespace -->
+            <include refid="queryUser"></include>
+        </where>
+    </select>
+    <!-- 用户信息综合查询总数 -->
+    <select id="findUserCount" parameterType="UserQueryVo" resultType="int">
+        SELECT COUNT(*) FROM USER
+        <where>
+            <include refid="queryUser"></include>
+        </where>
+    </select>
+    <!-- 在映射文件中配置很多sql语句-->
+    <!-- 通过id查询用户表的纪录 -->
+    <!-- 通过select执行数据库查询
+         id:标识映射文件中的sql,称为statement的id
+         将sql封装到mappedStatement对象中,所以将id称为statement的id
+         #{}表示一个占位符
+         #{id}:其中的id表示接收输入的参数，参数的名称就是id，如果输入参数是简单类型，#{}中的参数名可以任意,可以value或其他名称
+         parameterType:制定输入参数的类型,这里制定int型
+         resultType:指定sql输出结果所映射的java对象类型,select指定resultType表示将单条记录映射成java对象,且列名要和java对象属性名称一致
+    -->
+    <!-- 根据用户id查询 -->
+    <!--可通过useCache来设置是否禁用二级缓存,默认为true
+        flushCache用来设置执行增删改后是否刷新缓存，默认为true,一般为了避免脏读，都需要刷新缓存 -->
+    <select id="findUserById" parameterType="int" resultType="com.demo.ssm.po.User">
+        SELECT * FROM USER WHERE id=#{id}
+    </select>
+    <!-- 使用resultMap进行输出映射 -->
+    <select id="findUserByResultMap" parameterType="int" resultMap="userResultMap">
+        SELECT id id_,username username_ FROM USER WHERE id=#{id}
+    </select>
+    <!-- 根据用户姓名模糊查询
+         注意:resultType指定的是单个对象的类型
+         ${}:表示拼接sql串,将接收到的参数的内容不加任何修饰拼接到sql中
+         使用${}拼接字符串，可能会引起sql注入
+         ${value}: value表示接收参数的内容，注意，如果为简单类型，则只能使用value-->
+    <select id="findUserByName" parameterType="java.lang.String" resultType="com.demo.ssm.po.User">
+        SELECT * FROM USER WHERE username LIKE '%${value}%'
+    </select>
+
+    <!-- 添加用户
+         parameterType:指定输入参数类型是POJO
+         #{}中指定POJO的属性名,接收到POJOd对象的属性值-->
+    <insert id="insertUser" parameterType="com.demo.ssm.po.User">
+        <!-- 将插入数据的主键返回，返回到user对象中
+             SELECT LAST_INSERT_ID(): 得到刚执行插入insert进去的主键值，只适用于自增主键
+             keyProperty: 将查询到的主键值插入到parameterType指定的对象的哪个属性
+             order: 指定执行顺序,相对于insert语句它的执行顺序 -->
+        <selectKey keyProperty="id" order="AFTER" resultType="int">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        <!-- 若不使用自增主键,即主键随即生成,可使用mysql中的uuid()函数
+             执行过程:
+             通过uuid()生成主键，将主键设置到user的id中
+             在insert执行时，从user对象中取出id属性值
+             需要将id设置成char(35)类型-->
+        <!--<selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String">-->
+            <!--SELECT UUID()-->
+        <!--</selectKey>-->
+        <!--INSERT INTO USER(id,username,birthday,sex,address) VALUES(#{id},#{username},#{birthday},#{sex},#{address})-->
+        INSERT INTO USER(username,birthday,sex,address) VALUES(#{username},#{birthday},#{sex},#{address})
+    </insert>
+    <!--删除用户-->
+    <delete id="deleteUser" parameterType="int">
+        DELETE FROM USER WHERE id=#{id}
+    </delete>
+    <!--更新用户-->
+    <update parameterType="com.demo.ssm.po.User" id="updateUser">
+        UPDATE USER SET username=#{username},birthday=#{birthday},address=#{address},sex=#{sex} WHERE id=#{id}
+    </update>
+</mapper>
