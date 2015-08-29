@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpSession;
 import java.net.URISyntaxException;
@@ -43,20 +44,10 @@ public class UserController {
         httpSession.setAttribute("scores", scores);
         List<Score> scoreList = new ArrayList<>();
         HashSet<String> semesterList = new HashSet<String>();
-        double total = 0;
-        double totalCredit = 0;
         for (Score score : scores) {
             semesterList.add(score.getSemester());
-            if (score.getSemester().equals("14152")) {
-                scoreList.add(score);
-                total += score.getCredit() * score.getScore();
-                totalCredit += score.getCredit();
-            }
         }
         httpSession.setAttribute("semesterList",semesterList);
-        total /= totalCredit;
-        modelMap.addAttribute("scoreList", scoreList);
-        modelMap.addAttribute("avgScore", total);
 //        System.out.println(scores);
 //        ScoreUtil scoreUtil = new ScoreUtil();
 //        List<Score> scores = scoreUtil.getScores(uid, password, validation);
@@ -66,22 +57,14 @@ public class UserController {
     }
 
     @RequestMapping("/showScore/{semester}")
-    public String showScore(@PathVariable String semester, HttpSession httpSession,ModelMap modelMap) {
+    public @ResponseBody List<Score> showScore(@PathVariable String semester, HttpSession httpSession) {
         List<Score> scores = (List<Score>) httpSession.getAttribute("scores");
         List<Score> scoreList = new ArrayList<>();
-        double total = 0;
-        double totalCredit = 0;
         for (Score score : scores) {
             if (score.getSemester().equals(semester)) {
                 scoreList.add(score);
-                if (score.getCourseType().equals("外语水平")) continue;
-                total += score.getCredit() * score.getScore();
-                totalCredit += score.getCredit();
             }
         }
-        total /= totalCredit;
-        modelMap.addAttribute("scoreList", scoreList);
-        modelMap.addAttribute("avgScore", total);
-        return "showScore";
+        return scoreList;
     }
 }
