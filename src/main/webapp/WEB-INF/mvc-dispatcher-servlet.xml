@@ -13,6 +13,7 @@
     <!-- 静态资源解析,包括:js,css,img... -->
     <mvc:resources mapping="/upload/**" location="/upload/"/>
     <mvc:resources mapping="/js/**" location="/js/"/>
+    <mvc:resources mapping="/json/**" location="/json/"/>
 
     <!-- 使用mvc的注解驱动可以代替下面注解映射器和适配器的配置
          默认还加载了很多参数的绑定方法，比如json转换的解释器就默认加载了 -->
